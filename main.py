@@ -13,7 +13,7 @@ def health():
 
 
 @app.route("/send", methods=["POST"])
-def send_message():
+def send_message():{
     data = request.json
     text = data.get("text", "")
     
@@ -25,8 +25,12 @@ def send_message():
     
     if response.status_code == 200:
         return jsonify({"status": "sent"})
-    else:
+    else:{
+        print(response)
         return jsonify({"error": response.text}), 500
+    }
+    app.logger.info("Telegram status=%s body=%s", response.status_code, response.text)
+}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
