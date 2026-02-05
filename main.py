@@ -24,7 +24,7 @@ def send_message():
         return jsonify({"error": "Missing text"}), 400
 
     url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-
+    app.logger.info("Telegram URL=%s", url)
     try:
         response = requests.post(
             url,
