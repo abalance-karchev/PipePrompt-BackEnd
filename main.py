@@ -7,6 +7,11 @@ app = Flask(__name__)
 TG_TOKEN = os.environ.get("TG_TOKEN")
 TG_CHAT_ID = os.environ.get("TG_CHAT_ID")
 
+@app.get("/health")
+def health():
+    return jsonify({"ok": True}), 200
+
+
 @app.route("/send", methods=["POST"])
 def send_message():
     data = request.json
