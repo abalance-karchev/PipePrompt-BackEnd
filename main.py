@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 import os
-import google.generativeai as genai
+from google import genai
 
 app = Flask(__name__)
 
@@ -18,10 +18,7 @@ app = Flask(__name__)
 TG_TOKEN = os.environ.get("TG_TOKEN").strip()
 TG_CHAT_ID = os.environ.get("TG_CHAT_ID").strip()
 GEMINI_API_KEY = (os.environ.get("GEMINI_API_KEY") or "").strip()
-
-# Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Logging setup (so logs show in Railway)
 import logging
@@ -47,8 +44,10 @@ def ask():
     try:
         # Call Gemini
         app.logger.info("Calling Gemini with text=%s", user_text[:100])
-        response = model.generate_content(user_text)
-        answer = response.text
+        resp = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=user_text,)
+        answer = resp.text
         
         # Send to Telegram
         if TG_TOKEN and TG_CHAT_ID:
