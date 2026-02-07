@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import requests
 import os
 from google import genai
+from google.genai import types
+import base64
 
 app = Flask(__name__)
 
@@ -37,16 +39,45 @@ def ask():
 
     data = request.get_json(silent=True) or {}
     user_text = (data.get("text") or "").strip()
+    image_b64 = data.get("image")
     
     if not user_text:
         return jsonify({"error": "Missing text"}), 400
 
     try:
+        contents = user_text
+
+        if image_b64 is not None:
+            if not isinstance(image_b64, str):
+                return jsonify({"error": "Invalid image (must be base64 string)"}), 400
+
+            image_b64 = image_b64.strip()
+
+            if image_b64:
+                try:
+                    image_bytes = base64.b64decode(image_b64, validate=True)
+                except Exception:
+                    return jsonify({"error": "Invalid image (bad base64)"}), 400
+
+                max_image_bytes = 10 * 1024 * 1024  # 10MB
+                if len(image_bytes) > max_image_bytes:
+                    return jsonify({"error": "Image too large"}), 413
+
+                contents = [
+                    types.Part.from_text(text=user_text),
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                ]
+
         # Call Gemini
-        app.logger.info("Calling Gemini with text=%s", user_text[:100])
+        app.logger.info(
+            "Calling Gemini with text=%s image=%s",
+            user_text[:100],
+            bool(image_b64),
+        )
         resp = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=user_text,)
+            contents=contents,
+        )
         answer = resp.text
         
         # Send to Telegram
